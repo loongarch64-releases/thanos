@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+set -exuo pipefail
 
 UPSTREAM_OWNER=thanos-io
 UPSTREAM_REPO=thanos
@@ -12,6 +12,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 DISTS="${ROOT_DIR}/dists"
 SRCS="${ROOT_DIR}/srcs"
+
+# ======================================================================
+
+PATCHES="${ROOT_DIR}/patches"
+BUILD_DIR="${SRCS}/${VERSION}"
+DIST_DIR="${DISTS}/${VERSION}"
 
 mkdir -p "${DISTS}/${VERSION}" "${SRCS}"
 
@@ -26,10 +32,8 @@ prepare()
 {
     echo "📦 [Prepare] Setting up build environment..."
     
-    # TODO: 在此处添加准备命令
-    # 例如：apt-get update && apt-get install -y build-essential
-    # 例如：git clone -b ${VERSION} --depth=1 https://github.com/thanos-io/thanos ${SRCS}/${VERSION}
-    # 例如：patch -p1 < patches/loongarch-fix.patch
+    rm -rf ${BUILD_DIR}
+    git clone -b ${VERSION} --depth=1 https://github.com/thanos-io/thanos ${BUILD_DIR}
     
     echo "✅ [Prepare] Environment ready."
 }
@@ -39,23 +43,32 @@ build()
 {
     echo "🔨 [Build] Compiling source code..."
     
-    # TODO: 在此处添加编译命令
-    # 例如：make -j$(nproc) ARCH=loongarch64
-    # 例如：cmake -DCMAKE_BUILD_TYPE=Release .. && make
-    
+    # thanos 官方用 promu 构建，--prefix 直接指定二进制输出目录
+    # 注意：不要用 `make build`，其依赖 check-git (应用补丁后 worktree 变脏会失败) 和 deps (go mod tidy 弄脏 go.mod/go.sum)
+    (
+        cd ${BUILD_DIR}
+        shopt -s nullglob
+        local_patches=(${PATCHES}/*.patch)
+        shopt -u nullglob
+        [ ${#local_patches[@]} -gt 0 ] && git apply "${local_patches[@]}"
+        promu build -v --prefix ${DIST_DIR}
+        # promu tarball 从二进制目录打包，命名: thanos-<version>.<GOOS>-<GOARCH>.tar.gz
+        # 版本取自上游 VERSION 文件或 git describe；不带 --prefix 时输出到当前目录
+        promu tarball ${DIST_DIR}
+    )
 
     echo "✅ [Build] Compilation finished."
 }
 
-# 3. 后处理阶段：整理产物、清理临时文件、验证版本
+# 3. 后处理阶段：整理产物
 post_build()
 {
     echo "📦 [Post-Build] Organizing artifacts..."
     
-    # TODO: 在此处添加整理命令
-    # 例如：mkdir -p dists && cp binary dist/
-    # 例如：strip dist/binary
-    
+    # 将 tar.gz 移入产物目录，最终只需 tar.gz，删除裸二进制
+    mv ${BUILD_DIR}/thanos-*.tar.gz ${DIST_DIR}/
+    rm -f ${DIST_DIR}/thanos
+
     echo "✅ [Post-Build] Artifacts ready in ./dists/${VERSION}."
 }
 

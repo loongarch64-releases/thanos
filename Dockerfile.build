@@ -1,4 +1,4 @@
-FROM lcr.loongnix.cn/library/golang:1.25
+FROM lcr.loongnix.cn/library/golang:1.26
 
 RUN apt-get update && apt-get install -y \
     bash \
@@ -10,6 +10,17 @@ RUN apt-get update && apt-get install -y \
     libc6-dev \
     libseccomp-dev \
     && rm -rf /var/lib/apt/lists/*
+
+# Install promu (loong64 build, no official release available)
+# Official promu releases have no linux-loong64 binary; use the loongarch64-releases build.
+ENV PROMU_VERSION=0.20.0
+RUN wget -q -O /tmp/promu.tar.gz \
+        "https://github.com/loongarch64-releases/promu/releases/download/${PROMU_VERSION}/promu-${PROMU_VERSION}.linux-loong64.tar.gz" \
+    && tar xzf /tmp/promu.tar.gz -C /tmp \
+    && cp /tmp/promu-${PROMU_VERSION}.linux-loong64/promu /usr/local/bin/promu \
+    && chmod +x /usr/local/bin/promu \
+    && rm -rf /tmp/promu.tar.gz /tmp/promu-${PROMU_VERSION}.linux-loong64 \
+    && promu --help
 
 WORKDIR /workspace
 

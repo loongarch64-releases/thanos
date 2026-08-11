@@ -1,0 +1,18 @@
+diff --git a/.promu.yml b/.promu.yml
+index e48a30ea..23e7ebab 100644
+--- a/.promu.yml
++++ b/.promu.yml
+@@ -15,7 +15,7 @@ build:
+     -X github.com/prometheus/common/version.Version={{.Version}}
+     -X github.com/prometheus/common/version.Revision={{.Revision}}
+     -X github.com/prometheus/common/version.Branch={{.Branch}}
+-    -X github.com/prometheus/common/version.BuildUser={{user}}@{{host}}
++    -X github.com/prometheus/common/version.BuildUser=''
+     -X github.com/prometheus/common/version.BuildDate={{date "20060102-15:04:05"}}
+ crossbuild:
+   platforms:
+@@ -26,3 +26,4 @@ crossbuild:
+     - linux/arm64
+     - windows/amd64
+     - linux/ppc64le
++    - linux/loong64
