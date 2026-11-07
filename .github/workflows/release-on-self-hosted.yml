@@ -2,7 +2,7 @@ name: Auto Build thanos (Self hosted)
 
 on:
   schedule:
-    - cron: '0 16 * * *'
+    - cron: '22 23 * * *'
   workflow_dispatch:
 
 env:
